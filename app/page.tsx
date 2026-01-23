@@ -1,65 +1,82 @@
-import Image from "next/image";
+"use client";
+
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import Hero from "@/components/sections/Hero";
+import FAQ from "@/components/sections/FAQ";
+import WhyUs from "@/components/sections/WhyUs";
+import CityCard from "@/components/CityCard";
+import { ShieldCheck, Zap, Clock } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      <Navbar />
+      
+      {/* 1. HERO */}
+      <Hero />
+
+      {/* 2. TRUST BAR */}
+      <div className="bg-white border-b border-slate-200 py-4 shadow-sm relative z-20">
+         <div className="container mx-auto flex justify-center gap-4 md:gap-12 text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest text-center">
+            <span className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-green-600" /> Secure Payment</span>
+            <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-500" /> Instant Delivery</span>
+            <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-blue-600" /> 24/7 Support</span>
+         </div>
+      </div>
+
+      {/* 3. CITY SELECTION - EZ A LÉNYEG */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto">
+            <div className="text-center mb-16 max-w-3xl mx-auto">
+                <h2 className="text-blue-600 font-bold tracking-widest uppercase mb-3">Choose Your Destination</h2>
+                <h3 className="text-4xl md:text-5xl font-black text-slate-900 mb-6">Where do you want to go?</h3>
+                <p className="text-slate-500 text-lg">
+                    Select a city to view available skip-the-line tickets and exclusive experiences.
+                </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
+                {/* PÁRIZS KÁRTYA */}
+                <CityCard 
+                    name="Paris" 
+                    image="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=1200"
+                    description="The Louvre, Eiffel Tower, and Seine Cruises."
+                    link="/paris"
+                />
+                
+                {/* BARCELONA KÁRTYA */}
+                <CityCard 
+                    name="Barcelona" 
+                    image="https://images.unsplash.com/photo-1583422409516-2895a77efded?q=80&w=1200"
+                    description="Sagrada Família, Park Güell, and Casa Batlló."
+                    link="/barcelona"
+                />
+                
+                {/* PLACEHOLDERS (Hogy lásd, hogy nézne ki több várossal) */}
+                 <CityCard 
+                    name="Rome" 
+                    image="https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=1200"
+                    description="Colosseum, Vatican Museums, and St. Peter's."
+                    link="/rome"
+                />
+                 <CityCard 
+                    name="London" 
+                    image="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?q=80&w=1200"
+                    description="London Eye, Tower of London, and Madame Tussauds."
+                    link="/london"
+                />
+            </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </section>
+
+      {/* 4. WHY US */}
+      <WhyUs />
+
+      {/* 5. FAQ */}
+      <FAQ />
+
+      <Footer />
+    </main>
   );
 }
