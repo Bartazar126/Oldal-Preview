@@ -6,17 +6,17 @@ import Image from "next/image";
 import { Star, MapPin, ArrowRight, Search, ShieldCheck, Zap, Clock } from "lucide-react";
 import HeroSearch from "@/components/sections/HeroSearch";
 
-// Termékek lekérése a "Trending" szekcióhoz
+// 1. OPTIMALIZÁCIÓ: Csak a szükséges mezőket kérjük le!
 async function getProducts() {
   const { data } = await supabase
     .from('products')
-    .select('*')
+    .select('id, slug, title, price, original_price, rating, reviews, location, images, is_best_seller, is_recommended') // CSAK EZ KELL!
     .limit(8)
     .order('created_at', { ascending: false });
   return data || [];
 }
 
-// Statikus városlista (ezek a kiemelt úti célok)
+// Statikus városlista
 const destinations = [
     { name: "Paris", image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800&auto=format&fit=crop", desc: "The Louvre, Eiffel Tower" },
     { name: "Rome", image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=800&auto=format&fit=crop", desc: "Colosseum, Vatican" },
@@ -31,56 +31,60 @@ export default async function Home() {
     <main className="min-h-screen bg-[#f8f9fa] font-sans text-slate-900">
       <Navbar />
 
-      {/* 1. HERO SECTION (Keresővel) */}
-      <div className="relative h-[600px] flex items-center justify-center">
+      {/* 1. HERO SECTION */}
+      <div className="relative h-[500px] md:h-[600px] flex items-center justify-center">
         <div className="absolute inset-0 z-0">
+          {/* 2. OPTIMALIZÁCIÓ: Priority, Quality és Sizes */}
           <Image 
             src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2000&auto=format&fit=crop" 
             alt="Hero" 
             fill 
             className="object-cover brightness-50"
-            priority
+            priority={true} // Azonnal töltődjön (LCP javítás)
+            quality={85}    // Kicsit tömörítjük
+            sizes="100vw"   // Mindig teljes szélesség
           />
         </div>
 
-        <div className="relative z-10 text-center w-full space-y-8 mt-10">
-          <h1 className="text-4xl md:text-7xl font-black text-white tracking-tight drop-shadow-xl px-4">
+        <div className="relative z-10 text-center w-full space-y-6 md:space-y-8 mt-10">
+          <h1 className="text-4xl md:text-7xl font-black text-white tracking-tight drop-shadow-xl px-4 leading-tight">
             Unforgettable<br/>Experiences
           </h1>
-          <p className="text-lg md:text-xl text-slate-100 font-medium drop-shadow-md px-4">
+          <p className="text-lg md:text-xl text-slate-100 font-medium drop-shadow-md px-4 max-w-2xl mx-auto">
             Book museum tickets, city tours, and day trips worldwide.
           </p>
           
-          {/* INTERAKTÍV KERESŐ */}
           <HeroSearch />
         </div>
       </div>
 
       {/* 2. TRUST BAR */}
       <div className="bg-white border-b border-slate-200 py-4 shadow-sm relative z-20">
-         <div className="container mx-auto flex justify-center gap-4 md:gap-12 text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest text-center">
+         <div className="container mx-auto flex flex-wrap justify-center gap-4 md:gap-12 text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest text-center px-2">
             <span className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-green-600" /> Secure Payment</span>
             <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-500" /> Instant Delivery</span>
             <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-blue-600" /> 24/7 Support</span>
          </div>
       </div>
 
-      {/* 3. DESTINATIONS (Városválasztó) */}
-      <section className="py-16 px-4">
+      {/* 3. DESTINATIONS */}
+      <section className="py-12 md:py-16 px-4">
           <div className="container mx-auto">
-              <div className="text-center mb-12">
-                  <h2 className="text-blue-600 font-bold tracking-widest uppercase mb-2">Choose Your Destination</h2>
-                  <h3 className="text-3xl md:text-4xl font-black text-slate-900">Where do you want to go?</h3>
+              <div className="text-center mb-8 md:mb-12">
+                  <h2 className="text-blue-600 font-bold tracking-widest uppercase mb-2 text-xs md:text-sm">Choose Your Destination</h2>
+                  <h3 className="text-2xl md:text-4xl font-black text-slate-900">Where do you want to go?</h3>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                   {destinations.map((city) => (
                       <Link key={city.name} href={`/city/${city.name}`} className="group relative aspect-[3/4] rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                          {/* 3. OPTIMALIZÁCIÓ: SIZES PROP */}
                           <Image 
                               src={city.image} 
                               alt={city.name} 
                               fill 
                               className="object-cover transition-transform duration-700 group-hover:scale-110"
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80" />
                           <div className="absolute bottom-0 left-0 p-6 w-full">
@@ -96,11 +100,11 @@ export default async function Home() {
           </div>
       </section>
 
-      {/* 4. TRENDING PRODUCTS (Supabase-ből) */}
-      <section className="bg-white py-16 border-t border-slate-200">
+      {/* 4. TRENDING PRODUCTS */}
+      <section className="bg-white py-12 md:py-16 border-t border-slate-200">
         <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl md:text-3xl font-black text-slate-900">Trending Experiences</h2>
+                <h2 className="text-xl md:text-3xl font-black text-slate-900">Trending Experiences</h2>
                 <Link href="/search" className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
                     View all <ArrowRight className="w-4 h-4"/>
                 </Link>
@@ -115,14 +119,17 @@ export default async function Home() {
                     {products.map((product) => (
                         <Link key={product.id} href={`/product/${product.slug}`} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1">
                             
-                            {/* Kép */}
+                            {/* Kép Konténer */}
                             <div className="aspect-[4/3] relative bg-slate-100 overflow-hidden">
                                 {product.images?.[0] ? (
+                                    /* 4. OPTIMALIZÁCIÓ: SIZES ÉS LOADING */
                                     <Image 
                                         src={product.images[0]} 
                                         alt={product.title} 
                                         fill 
                                         className="object-cover transition-transform duration-700 group-hover:scale-110" 
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                                        loading="lazy"
                                     />
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-slate-300 font-bold uppercase">No Image</div>
@@ -140,7 +147,7 @@ export default async function Home() {
                                     <MapPin className="w-3 h-3"/> {product.location}
                                 </div>
                                 
-                                <h3 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                <h3 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[44px]">
                                     {product.title}
                                 </h3>
 
@@ -156,7 +163,12 @@ export default async function Home() {
                                 <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                                     <div className="flex flex-col">
                                         <span className="text-[10px] text-slate-400 font-bold uppercase">From</span>
-                                        <span className="text-lg font-black text-slate-900">€{product.price}</span>
+                                        <div className="flex items-center gap-2">
+                                            {product.original_price && product.original_price > product.price && (
+                                                <span className="text-xs text-slate-300 line-through">€{product.original_price}</span>
+                                            )}
+                                            <span className="text-lg font-black text-slate-900">€{product.price}</span>
+                                        </div>
                                     </div>
                                     <button className="bg-slate-50 group-hover:bg-blue-600 group-hover:text-white text-slate-400 p-2 rounded-lg transition-colors">
                                         <ArrowRight className="w-5 h-5"/>
