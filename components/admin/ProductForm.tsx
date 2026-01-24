@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Save, Plus, Trash2, Layout, List, Image as ImageIcon, Settings, HelpCircle, ArrowLeft, Ticket, X, Clock, Calendar as CalendarIcon, Loader2, RotateCcw, CheckCircle2, Ban } from "lucide-react";
 
-// --- TÍPUSOK ---
+// --- TYPES ---
 interface FaqItem { q: string; a: string; }
 interface TicketType { name: string; price: number | null; } 
 
@@ -17,27 +17,30 @@ interface ProductFormData {
   price: number; original_price: number; duration: string;
   rating: number; reviews: number;
   short_desc: string; full_description: string;
+  important_info: string; 
   images: string[]; inclusions: string[]; exclusions: string[]; languages: string[];
   cancellation: string; confirmation: string; meeting_point: string; map_url: string;
   faq: FaqItem[];
   is_recommended: boolean; is_best_seller: boolean;
   ticket_types: TicketType[];
   req_all_travelers: boolean;
-  time_slots: string[]; // ALAP (Default)
-  date_overrides: Record<string, string[]>; // KIVÉTELEK
+  time_slots: string[]; 
+  date_overrides: Record<string, string[]>; 
 }
 
-// --- SEGÉD KOMPONENS LISTÁKHOZ ---
+// --- HELPER COMPONENT FOR LISTS ---
 const DynamicList = ({ items, onChange, placeholder }: any) => { 
+  const safeItems = Array.isArray(items) ? items : [];
+  
   return (
     <div className="space-y-2">
-      {items.map((item:any, index:any) => (
+      {safeItems.map((item:any, index:any) => (
         <div key={index} className="flex gap-2">
-          <Input value={item} onChange={(e) => { const n = [...items]; n[index] = e.target.value; onChange(n); }} placeholder={placeholder} />
-          <Button variant="outline" size="icon" onClick={() => onChange(items.filter((_:any, i:any) => i !== index))} className="shrink-0 text-red-500 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>
+          <Input value={item} onChange={(e) => { const n = [...safeItems]; n[index] = e.target.value; onChange(n); }} placeholder={placeholder} />
+          <Button variant="outline" size="icon" onClick={() => onChange(safeItems.filter((_:any, i:any) => i !== index))} className="shrink-0 text-red-500 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>
         </div>
       ))}
-      <Button variant="outline" size="sm" onClick={() => onChange([...items, ""])} className="text-blue-600 bg-blue-50 mt-2"><Plus className="w-3 h-3 mr-1" /> Add Item</Button>
+      <Button variant="outline" size="sm" onClick={() => onChange([...safeItems, ""])} className="text-blue-600 bg-blue-50 mt-2"><Plus className="w-3 h-3 mr-1" /> Add Item</Button>
     </div>
   );
 };
@@ -55,7 +58,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
   // Date Override State
   const [selectedOverrideDate, setSelectedOverrideDate] = useState("");
 
-  // --- STATE INICIALIZÁLÁS ---
+  // --- STATE INITIALIZATION ---
   const [formData, setFormData] = useState<ProductFormData>({
     title: initialData?.title || "",
     slug: initialData?.slug || "",
@@ -67,24 +70,28 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
     reviews: initialData?.reviews || 0,
     short_desc: initialData?.short_desc || "",
     full_description: initialData?.full_description || "",
-    images: initialData?.images && initialData.images.length > 0 ? initialData.images : [""],
-    inclusions: initialData?.inclusions || [],
-    exclusions: initialData?.exclusions || [],
-    languages: initialData?.languages || ["English"],
+    important_info: typeof initialData?.important_info === 'string' ? initialData.important_info : "",
+    
+    // SAFE ARRAYS
+    images: Array.isArray(initialData?.images) ? initialData.images : [""],
+    inclusions: Array.isArray(initialData?.inclusions) ? initialData.inclusions : [],
+    exclusions: Array.isArray(initialData?.exclusions) ? initialData.exclusions : [],
+    languages: Array.isArray(initialData?.languages) ? initialData.languages : ["English"],
+    faq: Array.isArray(initialData?.faq) ? initialData.faq : [],
+    ticket_types: Array.isArray(initialData?.ticket_types) ? initialData.ticket_types : [{ name: "Adult", price: initialData?.price || 0 }],
+    time_slots: Array.isArray(initialData?.time_slots) ? initialData.time_slots : [],
+    date_overrides: initialData?.date_overrides || {},
+    
     cancellation: initialData?.cancellation || "Free cancellation up to 24 hours in advance",
     confirmation: initialData?.confirmation || "Instant confirmation",
     meeting_point: initialData?.meeting_point || "",
     map_url: initialData?.map_url || "",
-    faq: initialData?.faq || [],
     is_recommended: initialData?.is_recommended || false,
     is_best_seller: initialData?.is_best_seller || false,
-    ticket_types: initialData?.ticket_types || [{ name: "Adult", price: initialData?.price || 0 }],
     req_all_travelers: initialData?.req_all_travelers || false,
-    time_slots: initialData?.time_slots || [], 
-    date_overrides: initialData?.date_overrides || {},
   });
 
-  // --- SLOT GENERÁTOR (ALAP) ---
+  // --- SLOT GENERATOR ---
   const generateSlots = () => {
       const slots = [];
       let current = new Date(`2000-01-01T${genStart}`);
@@ -105,40 +112,25 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
       }
   };
 
-  // --- DÁTUM SPECIFIKUS LOGIKA (PIROS/ZÖLD) ---
-  
-  // Megnézi, hogy egy adott napon mely slotok aktívak
+  // --- DATE SPECIFIC LOGIC ---
   const getActiveSlotsForDate = (date: string) => {
-      if (formData.date_overrides[date]) {
-          return formData.date_overrides[date];
-      }
-      return formData.time_slots; // Ha nincs felülírva, akkor az alapértelmezett érvényes
+      if (formData.date_overrides[date]) return formData.date_overrides[date];
+      return formData.time_slots;
   };
 
-  // Van-e egyáltalán felülírás a napra?
-  const isDateOverridden = (date: string) => {
-      return Array.isArray(formData.date_overrides[date]);
-  };
+  const isDateOverridden = (date: string) => Array.isArray(formData.date_overrides[date]);
 
-  // Slot ki-be kapcsolása (Override létrehozása)
   const toggleOverrideSlot = (date: string, slot: string) => {
       const currentActive = getActiveSlotsForDate(date);
-      
       let newActive;
       if (currentActive.includes(slot)) {
-          // Ha benne van, kivesszük (LEZÁRJUK -> PIROS LESZ)
           newActive = currentActive.filter(s => s !== slot);
       } else {
-          // Ha nincs benne, visszarakjuk (KINYITJUK -> ZÖLD LESZ)
           newActive = [...currentActive, slot].sort();
       }
-
       setFormData({
           ...formData,
-          date_overrides: {
-              ...formData.date_overrides,
-              [date]: newActive
-          }
+          date_overrides: { ...formData.date_overrides, [date]: newActive }
       });
   };
 
@@ -148,28 +140,39 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
       setFormData({ ...formData, date_overrides: newOverrides });
   };
 
-  // --- MENTÉS ---
+  // --- SAVE ---
   const handleSubmit = async () => {
     setLoading(true);
+
     const cleanData = {
       ...formData,
-      images: formData.images.filter((img) => img.trim() !== ""),
-      inclusions: formData.inclusions.filter((x) => x.trim() !== ""),
-      exclusions: formData.exclusions.filter((x) => x.trim() !== ""),
-      languages: formData.languages.filter((x) => x.trim() !== ""),
+      images: Array.isArray(formData.images) ? formData.images.filter((img) => img && img.trim() !== "") : [],
+      inclusions: Array.isArray(formData.inclusions) ? formData.inclusions.filter((x) => x && x.trim() !== "") : [],
+      exclusions: Array.isArray(formData.exclusions) ? formData.exclusions.filter((x) => x && x.trim() !== "") : [],
+      languages: Array.isArray(formData.languages) ? formData.languages.filter((x) => x && x.trim() !== "") : [],
+      important_info: String(formData.important_info || ""),
     };
 
     let error;
-    if (initialData?.id) {
-        const { error: err } = await supabase.from('products').update(cleanData).eq('id', initialData.id);
-        error = err;
-    } else {
-        const { error: err } = await supabase.from('products').insert([cleanData]);
+    try {
+        if (initialData?.id) {
+            const { error: err } = await supabase.from('products').update(cleanData).eq('id', initialData.id);
+            error = err;
+        } else {
+            const { error: err } = await supabase.from('products').insert([cleanData]);
+            error = err;
+        }
+    } catch (err: any) {
         error = err;
     }
+
     setLoading(false);
-    if (error) alert("Error: " + error.message);
-    else router.push("/admin/products");
+    if (error) {
+        alert("Hiba mentéskor: " + error.message);
+        console.error(error);
+    } else {
+        router.push("/admin/products");
+    }
   };
 
   const tabs = [
@@ -218,8 +221,18 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                     </div>
                     <div><label className="text-xs font-bold text-slate-500 uppercase mb-1">Slug (ID)</label><Input value={formData.slug} onChange={(e) => setFormData({...formData, slug: e.target.value})} /></div>
                     <div><label className="text-xs font-bold text-slate-500 uppercase mb-1">Location</label><Input value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} /></div>
-                    <div><label className="text-xs font-bold text-slate-500 uppercase mb-1">Base Price (€)</label><Input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: Number(e.target.value)})} /></div>
-                    <div><label className="text-xs font-bold text-slate-500 uppercase mb-1">Original Price</label><Input type="number" value={formData.original_price} onChange={(e) => setFormData({...formData, original_price: Number(e.target.value)})} /></div>
+                    
+                    {/* PRICE FIELDS */}
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase mb-1">Sale Price (€)</label>
+                        <Input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: Number(e.target.value)})} className="font-bold text-blue-600" />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase mb-1">Original Price (€)</label>
+                        <Input type="number" value={formData.original_price} onChange={(e) => setFormData({...formData, original_price: Number(e.target.value)})} placeholder="Optional (for discount)" />
+                        <p className="text-[10px] text-slate-400 mt-1">Set higher than Sale Price to show discount.</p>
+                    </div>
+
                     <div><label className="text-xs font-bold text-slate-500 uppercase mb-1">Duration</label><Input value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})} /></div>
                 </div>
                 <div className="flex gap-8 border-t border-slate-100 pt-4">
@@ -229,11 +242,9 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
             </div>
           )}
 
-          {/* TAB: SCHEDULE (A NAGY DOBÁS!) */}
+          {/* TAB: SCHEDULE */}
           {activeTab === "schedule" && (
              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 animate-in fade-in">
-                 
-                 {/* BAL: DEFAULT */}
                  <div className="space-y-6">
                      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-full">
                          <div className="flex items-center gap-2 mb-4">
@@ -253,8 +264,9 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                          </div>
                          <div className="flex flex-wrap gap-2">
                              {formData.time_slots.length === 0 && <p className="text-xs text-slate-400">No default slots.</p>}
-                             {formData.time_slots.map(slot => (
-                                 <button key={slot} onClick={() => toggleDefaultSlot(slot)} className="bg-slate-100 hover:bg-red-50 hover:text-red-600 border border-slate-200 text-slate-700 text-xs font-bold px-2 py-1.5 rounded transition-all">
+                             {/* FIX: KEY=INDEX HASZNÁLATA A DUPLIKÁCIÓS HIBA ELLEN */}
+                             {formData.time_slots.map((slot, index) => (
+                                 <button key={`${slot}-${index}`} onClick={() => toggleDefaultSlot(slot)} className="bg-slate-100 hover:bg-red-50 hover:text-red-600 border border-slate-200 text-slate-700 text-xs font-bold px-2 py-1.5 rounded transition-all">
                                      {slot}
                                  </button>
                              ))}
@@ -262,7 +274,6 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                      </div>
                  </div>
 
-                 {/* JOBB: KIVÉTELEK (PIROS/ZÖLD) */}
                  <div className="space-y-6">
                      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-full border-l-4 border-l-amber-400">
                          <div className="flex items-center gap-2 mb-6">
@@ -298,18 +309,18 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
 
                                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                      <div className="flex flex-wrap gap-2">
-                                         {/* Itt végigmegyünk az ÖSSZES alap sloton, hogy megmutassuk mi van zárva és mi nyitva */}
-                                         {formData.time_slots.map(slot => {
+                                         {/* FIX: ITT VOLT A HIBA - MOST MÁR EZ IS INDEX ALAPÚ */}
+                                         {formData.time_slots.map((slot, index) => {
                                              const isActive = getActiveSlotsForDate(selectedOverrideDate).includes(slot);
                                              return (
                                                  <button 
-                                                    key={slot} 
+                                                    key={`override-${slot}-${index}`} 
                                                     onClick={() => toggleOverrideSlot(selectedOverrideDate, slot)} 
                                                     className={`
                                                         text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 border
                                                         ${isActive 
-                                                            ? "bg-green-100 text-green-700 border-green-200 hover:opacity-80" // ZÖLD (NYITVA)
-                                                            : "bg-red-100 text-red-500 border-red-200 hover:opacity-80 line-through opacity-70" // PIROS (ZÁRVA)
+                                                            ? "bg-green-100 text-green-700 border-green-200 hover:opacity-80" 
+                                                            : "bg-red-100 text-red-500 border-red-200 hover:opacity-80 line-through opacity-70"
                                                         }
                                                     `}
                                                  >
@@ -377,6 +388,17 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                  <div>
                     <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Full Description</label>
                     <Textarea value={formData.full_description} onChange={(e) => setFormData({...formData, full_description: e.target.value})} placeholder="Detailed itinerary..." className="h-64 font-mono text-sm leading-relaxed" />
+                 </div>
+
+                 {/* IMPORTANT INFO */}
+                 <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Important Information</label>
+                    <Textarea 
+                        value={formData.important_info} 
+                        onChange={(e) => setFormData({...formData, important_info: e.target.value})} 
+                        placeholder="Passport required, no large bags..." 
+                        className="h-32" 
+                    />
                  </div>
              </div>
           )}
